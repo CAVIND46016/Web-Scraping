@@ -1,11 +1,11 @@
 # https://stackoverflow.com/questions/41706274/beautifulsoup-returns-incomplete-html
 """
-The issue is that the content of <div class="topic-post clearfix regular"></div> on boingboing comments is only loaded via javascript. 
-You need to execute javascript somehow. Since beautifulsoup doesn't offer this, one solution is to use selenium 
-for that. 
+The issue is that by default, a qty. of 19 <div class="topic-post clearfix regular"></div> tags on boingboing comments is loaded at 
+page startup and the remaining are loaded once the page is scrolled down. 
+We use selenium web-driver to fix this issue.
+
 pip install selenium and install geckodriver (https://github.com/mozilla/geckodriver/releases) for firefox 
 (on OSX: brew install geckodriver). 
-Then change your code to use selenium to load the page:
 Note: geckodriver.exe must be in the same directory as the .py file.
 """
 
