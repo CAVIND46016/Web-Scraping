@@ -4,7 +4,6 @@ from selenium import webdriver
 from util import connectToDatabaseServer
 from boingboing_comments import fetch_comment_info
 from datetime import datetime
-from send_email import SendEmail
 import http
 import sys
 import time
@@ -48,6 +47,7 @@ def extract_post_story(div_id_story):
     return post_story[:post_story.find(before_keyword)]
 
 def scrape(web_url, conn, cur, i, pg_no):
+    # Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response
     http.client.HTTPConnection(host = web_url, port = 80, timeout=200)
     page = urllib2.urlopen(web_url)
         
