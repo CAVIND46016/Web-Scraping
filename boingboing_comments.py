@@ -21,6 +21,7 @@ def fetch_comment_info(browser, url, postno, cur, delay = 100):
     comments = {}
     # indicates presence of div_class_share but no a_class_bbs
     try:
+        # Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response
         http.client.HTTPConnection(host = url, port = 80, timeout=200)
         browser.get(url)
     except:
