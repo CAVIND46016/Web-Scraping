@@ -19,8 +19,7 @@ bb_url = "https://boingboing.net/grid/";
 DATABASE = "BoingBoing";
 
 # Recursion breakpoint definition
-start_cutoffdate = datetime.strptime("1/1/2012", "%m/%d/%Y").date()
-# end_cutoffdate   = datetime.strptime("12/31/2016", "%m/%d/%Y").date()
+start_cutoffdate = datetime.strptime("1/1/2004", "%m/%d/%Y").date()
 end_cutoffdate   = datetime.now().date()
 
 if(start_cutoffdate > end_cutoffdate):
@@ -48,8 +47,10 @@ def extract_post_story(div_id_story):
 
 def scrape(web_url, conn, cur, i, pg_no):
     # Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response
-    http.client.HTTPConnection(host = web_url, port = 80, timeout=200)
-    page = urllib2.urlopen(web_url)
+    try:
+        page = urllib2.urlopen(web_url, timeout=200)
+    except:
+        print("404 Error: {}".format(web_url))
         
     soup = BeautifulSoup(page, "html.parser")
 
@@ -57,10 +58,19 @@ def scrape(web_url, conn, cur, i, pg_no):
     
     div_class_feature = div_id_posts.find_all("div", attrs={"class":"feature"})
     
+    # If there are no posts on the page, return
+    if(len(div_class_feature) == 0):
+        return 0
+    
     """ **************************************ARTICLES************************************** """
     for feature in div_class_feature:
         a_class_headline = feature.find("a", attrs={"class":"headline"})  
-        post_page = urllib2.urlopen(a_class_headline['href'])
+        # Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response
+        try:
+            post_page = urllib2.urlopen(a_class_headline['href'], timeout=200)
+        except:
+            print("404 Error: {}".format(a_class_headline['href']))
+            
         post_soup = BeautifulSoup(post_page, "html.parser")
         
         # if no comments on the article, skip article
@@ -74,7 +84,7 @@ def scrape(web_url, conn, cur, i, pg_no):
             print("Date format error.")
             
         # apply the date filter
-        if(posteddate < start_cutoffdate or start_cutoffdate > end_cutoffdate):
+        if(posteddate < start_cutoffdate or posteddate > end_cutoffdate):
             return 0;
             
         if(not div_class_share):
@@ -143,14 +153,11 @@ def scrape(web_url, conn, cur, i, pg_no):
         i += 1
  
     # construct next page url.
-    next_page_url = bb_url + "page/{}/".format(pg_no + 1)
     print("Page no: {} - {}".format(pg_no, posteddate))
     pg_no += 1
+    next_page_url = bb_url + "page/{}/".format(pg_no)
     
-    if(not next_page_url):
-        print("URL does not exist: {}".format(next_page_url))
-        return 0;
-
+    # recursive logic
     scrape(next_page_url, conn, cur, i, pg_no)
 
 def main():
@@ -166,7 +173,7 @@ def main():
         conn = conn_obj[0];
         cur = conn_obj[1];
   
-    scrape(bb_url, conn, cur, i = 432, pg_no = 2989);  
+    scrape(bb_url, conn, cur, i = 1, pg_no = 1);  
     
     conn.commit()
     cur.close()
