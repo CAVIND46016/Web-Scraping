@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import sys
 import time
-from util import sendSMS, connectToDatabaseServer
+from util import connectToDatabaseServer
 import util
 
 # Bruce Schneier's blog - Schneier on Security
