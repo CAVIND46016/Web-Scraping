@@ -14,7 +14,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from datetime import datetime
-import http
 import re
 import time
 import math
@@ -23,17 +22,12 @@ SCREEN_HEIGHT_IN_PIXELS = 1080
 COMMENTS_SCREEN_SIZE = 3
 SCROLL_WAIT_TIME = 1
 
-# Fixing the 'IncompleteRead' bug using http
-# https://stackoverflow.com/questions/14149100/incompleteread-using-httplib
-http.client.HTTPConnection._http_vsn = 10
-http.client.HTTPConnection._http_vsn_str = 'HTTP/1.0'
-
 def fetch_comment_info(browser, url, postno, cur, delay = 100):
     comments = {}
     # indicates presence of div_class_share but no a_class_bbs
     try:
         # Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response
-        http.client.HTTPConnection(host = url, port = 80, timeout=200)
+        browser.set_page_load_timeout(200)
         browser.get(url)
     except:
         return comments
