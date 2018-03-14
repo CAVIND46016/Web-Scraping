@@ -1,43 +1,45 @@
 import urllib.request as urllib2
-from bs4 import BeautifulSoup
-from selenium import webdriver
-from util import connectToDatabaseServer
-from boingboing_comments import fetch_comment_info
 from datetime import datetime
 import http
 import sys
 import time
 import re
 
-# system default value is 1000; to avoid recursion depth to exceed,
+from bs4 import BeautifulSoup
+from selenium import webdriver
+
+from util import connectToDatabaseServer
+from boingboing_comments import fetch_comment_info
+
+
+"""System default value is 1000; to avoid recursion exceeded error"""
 sys.setrecursionlimit(10000)
 
-# BoingBoing - A directory of mostly wonderful things
-bb_url = "https://boingboing.net/grid/";
+"""BoingBoing - A directory of mostly wonderful things"""
+BB_URL = "https://boingboing.net/grid/"
 
-# PostgreSQL Database name
-DATABASE = "BoingBoing";
+"""PostgreSQL Database name"""
+DATABASE = "BoingBoing"
 
-# Recursion breakpoint definition
-start_cutoffdate = datetime.strptime("1/1/2004", "%m/%d/%Y").date()
-end_cutoffdate   = datetime.now().date()
+"""Recursion breakpoint definition"""
+START_CUTOFF_DATE = datetime.strptime("1/1/2004", "%m/%d/%Y").date()
+END_CUTOFF_DATE   = datetime.now().date()
 
-if(start_cutoffdate > end_cutoffdate):
+if(START_CUTOFF_DATE > END_CUTOFF_DATE):
     raise ValueError('Cutoff start date is greater than end date')
 
-if(end_cutoffdate > datetime.now().date()):
+if(END_CUTOFF_DATE > datetime.now().date()):
     raise ValueError('Cutoff end date is greater than current date')
 
-# posts filter
+"""Filter on post tags"""
 required_tags = ['facebook', 'social media']
 
-# Fixing the 'IncompleteRead' bug using http
-# https://stackoverflow.com/questions/14149100/incompleteread-using-httplib
+"""Fixing the 'IncompleteRead' bug using http, https://stackoverflow.com/questions/14149100/incompleteread-using-httplib"""
 http.client.HTTPConnection._http_vsn = 10
 http.client.HTTPConnection._http_vsn_str = 'HTTP/1.0'
 
-# firefox browser object
-browser = webdriver.Firefox()
+"""Firefox browser object"""
+browser = webdriver.Firefox()  # Opens a Firefox browser window
 
 def extract_post_story(div_id_story):
     before_keyword = "SHARE /"
@@ -46,11 +48,12 @@ def extract_post_story(div_id_story):
     return post_story[:post_story.find(before_keyword)]
 
 def scrape(web_url, conn, cur, i, pg_no):
-    # Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response
+    """Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response"""
     try:
         page = urllib2.urlopen(web_url, timeout=200)
     except:
-        print("404 Error: {}".format(web_url))
+        print("Error 404: {} not found.".format(web_url))
+        continue
         
     soup = BeautifulSoup(page, "html.parser")
 
@@ -58,37 +61,38 @@ def scrape(web_url, conn, cur, i, pg_no):
     
     div_class_feature = div_id_posts.find_all("div", attrs={"class":"feature"})
     
-    # If there are no posts on the page, return
+    """If no features found on the page, return"""
     if(len(div_class_feature) == 0):
         return 0
     
     """ **************************************ARTICLES************************************** """
     for feature in div_class_feature:
         a_class_headline = feature.find("a", attrs={"class":"headline"})  
-        # Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response
+        """Added timeout for the error: http.client.RemoteDisconnected: Remote end closed connection without response"""
         try:
             post_page = urllib2.urlopen(a_class_headline['href'], timeout=200)
         except:
-            print("404 Error: {}".format(a_class_headline['href']))
+            print("Error 404: {} not found.".format(a_class_headline['href']))
+            continue
             
         post_soup = BeautifulSoup(post_page, "html.parser")
         
-        # if no comments on the article, skip article
         div_class_share = post_soup.find("div", attrs={"class":"share"})
+        
+        """if no comments on the article, skip article"""
+        if(not div_class_share):
+            continue
         
         try:
             date_str = re.findall("\d+/\d+/\d+", a_class_headline['href'])[0]
             posteddate = datetime.strptime(date_str, "%Y/%m/%d").date()
         except:
-            posteddate = None;
+            posteddate = None
             print("Date format error.")
             
-        # apply the date filter
-        if(posteddate < start_cutoffdate or posteddate > end_cutoffdate):
-            return 0;
-            
-        if(not div_class_share):
-            continue;
+        """apply the date filter"""
+        if(posteddate < START_CUTOFF_DATE or posteddate > END_CUTOFF_DATE):
+            return 0
         
         article_headline = a_class_headline.text.strip()
         
@@ -102,7 +106,7 @@ def scrape(web_url, conn, cur, i, pg_no):
 
         h3_class_thetags = div_class_share.find("h3", attrs={"class":"thetags"})
         if(not h3_class_thetags):
-            post_tags = "";
+            post_tags = ""
         else:
             post_tags = ', '.join([x.lower() for x in [tag.string.strip().replace('/', '') for tag in h3_class_thetags] if x != ''])
         
@@ -111,23 +115,19 @@ def scrape(web_url, conn, cur, i, pg_no):
             div_class_navbyline = post_soup.find("header", attrs={"id":"bbheader"})
         
         span_class_author = div_class_navbyline.find("span", attrs={"class":"author"})
-        
-        span_id_metadata = div_class_navbyline.find("span", attrs={"id":"metadata"})
-        if(not span_id_metadata):
-            span_id_metadata = div_class_navbyline.find("span", attrs={"class":"time"})
 
-        # apply the 'tags' filter
-        is_OK = False;
+        """Apply the 'tags' filter"""
+        is_OK = False
         if(required_tags):
             for elem in required_tags:
                 if(elem in post_tags or elem in article_headline.lower()):
-                    is_OK = True;
-                    break;
+                    is_OK = True
+                    break
         else:
             is_OK = True      
             
         if(not is_OK):
-            continue;
+            continue
         
         query =  "INSERT INTO posts(postno, a_page_url, headline, text, tags, author, posteddate) VALUES (%s, %s, %s, %s, %s, %s, %s);"
         data = (i, 
@@ -136,9 +136,9 @@ def scrape(web_url, conn, cur, i, pg_no):
                 post_txt, 
                 post_tags, 
                 [x.string for x in span_class_author.find("a")][0],
-                posteddate);
+                posteddate)
                 
-        cur.execute(query, data);
+        cur.execute(query, data)
         print("FOUND POST: {}, {}".format(i, article_headline))
         
         """ **************************************COMMENTS************************************** """
@@ -148,14 +148,14 @@ def scrape(web_url, conn, cur, i, pg_no):
         for _, value in comments.items():
             if(value['comm_text'] != ""):
                 cquery =  "INSERT INTO comments(commentno, postno, comments, postedby, likes, posteddate) VALUES (%s, %s, %s, %s, %s, %s);"
-                cdata = (value['comm_no'], i, value['comm_text'], value['postedby'], value['likes'], value['date']);
-                cur.execute(cquery, cdata);
+                cdata = (value['comm_no'], i, value['comm_text'], value['postedby'], value['likes'], value['date'])
+                cur.execute(cquery, cdata)
         i += 1
  
     # construct next page url.
     print("Page no: {} - {}".format(pg_no, posteddate))
     pg_no += 1
-    next_page_url = bb_url + "page/{}/".format(pg_no)
+    next_page_url = BB_URL + "page/{}/".format(pg_no)
     
     # recursive logic
     scrape(next_page_url, conn, cur, i, pg_no)
@@ -163,24 +163,22 @@ def scrape(web_url, conn, cur, i, pg_no):
 def main():
     s = time.time()
     
-    conn_obj = connectToDatabaseServer(DATABASE);
+    conn_obj = connectToDatabaseServer(DATABASE)
     
     if(conn_obj == -1):
-        print_text = "Connection to PostgreSQL Database: {} failed.".format(DATABASE);
-        print(print_text);
-        sys.exit(0);
+        print("Connection to PostgreSQL Database: {} failed.".format(DATABASE))
+        sys.exit(0)
     else:
-        conn = conn_obj[0];
-        cur = conn_obj[1];
+        conn = conn_obj[0]
+        cur = conn_obj[1]
   
-    scrape(bb_url, conn, cur, i = 1, pg_no = 1);  
+    scrape(BB_URL, conn, cur, i = 1, pg_no = 1)
     
     conn.commit()
     cur.close()
     conn.close()
     
-    print_text = "Webdata scraped successfully in {} seconds.".format(time.time()-s)
-    print(print_text)
+    print("Webdata scraped successfully in {} seconds.".format(time.time()-s))
     
 if(__name__ == "__main__"):
     main()
