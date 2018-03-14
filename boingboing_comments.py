@@ -1,5 +1,5 @@
-# https://stackoverflow.com/questions/41706274/beautifulsoup-returns-incomplete-html
 """
+https://stackoverflow.com/questions/41706274/beautifulsoup-returns-incomplete-html
 The page setup is such that, by default, approx. 19 <div class="topic-post clearfix regular"></div> tags on boingboing comments are
 loaded at startup and the remaining get loaded once the page is manually scrolled down. 
 We use selenium web-driver to achieve the manual scrolling.
@@ -76,7 +76,7 @@ def fetch_comment_info(browser, url, postno, cur, delay=100):
     tmp = 0            
     query =  "UPDATE posts SET c_page_url = %s, replies = %s, views = %s, users = %s, likes = %s, links = %s WHERE postno = %s;"
     if(topic_map[0] >= 1):
-        tmp = topic_map[0] - 1
+        tmp = topic_map[0] - 1  # Ensuring 'replies' is not a negative number
     data = (url, tmp, topic_map[1], topic_map[2], topic_map[3], topic_map[4], postno)
         
     cur.execute(query, data)
