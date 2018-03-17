@@ -21,8 +21,7 @@ sys.setrecursionlimit(10000)
 BB_URL = "https://boingboing.net/grid/"
 
 # PostgreSQL Database name
-# DATABASE = "BoingBoing"
-DATABASE = "new_bb_2015_18"
+DATABASE = "BoingBoing"
 
 # Recursion breakpoint definition
 START_CUTOFF_DATE = datetime.strptime("3/17/2018", "%m/%d/%Y").date()
