@@ -24,7 +24,7 @@ BB_URL = "https://boingboing.net/grid/"
 DATABASE = "BoingBoing"
 
 # Recursion breakpoint definition
-START_CUTOFF_DATE = datetime.strptime("3/17/2018", "%m/%d/%Y").date()
+START_CUTOFF_DATE = datetime.strptime("1/1/2004", "%m/%d/%Y").date()
 END_CUTOFF_DATE = datetime.now().date()
 
 if START_CUTOFF_DATE > END_CUTOFF_DATE:
@@ -34,7 +34,7 @@ if END_CUTOFF_DATE > datetime.now().date():
     raise ValueError('Cutoff end date is greater than current date.')
 
 # posts filter
-REQUIRED_TAGS = []#['facebook', 'social media']
+REQUIRED_TAGS = ['facebook', 'social media']
 
 # Fixing the 'IncompleteRead' bug using http
 # https://stackoverflow.com/questions/14149100/incompleteread-using-httplib
