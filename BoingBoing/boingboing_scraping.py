@@ -177,7 +177,7 @@ def main():
     Entry-point for the function.
     """
     start_time = time.time()
-    conn_obj = connectToDatabaseServer(DATABASE)
+    conn_obj = connect_to_database_server(DATABASE)
     
     if conn_obj == -1:
         print("Connection to PostgreSQL Database: {} failed.".format(DATABASE))
