@@ -7,7 +7,6 @@ import urllib.request as urllib2
 from datetime import datetime
 
 from bs4 import BeautifulSoup
-
 from util import connect_to_database_server
 
 # Bruce Schneier's blog - Schneier on Security
@@ -29,6 +28,7 @@ if END_CUTOFF_DATE > datetime.now().date():
 # Tag filter
 REQUIRED_TAGS = ['facebook', 'social media']
 
+
 def get_date_time(datetimestr, _type):
     """
     converts text of the form '%B %d, %Y at %I:%M %p'
@@ -44,6 +44,7 @@ def get_date_time(datetimestr, _type):
         format_str = "%B %d, %Y %I:%M %p"
         datetime_object = datetime.strptime(datetimestr, format_str)
         return datetime_object.strftime('%m/%d/%Y')
+
 
 def extract_text(article_tag, _typ, _type='content'):
     """
@@ -73,14 +74,14 @@ def scrape(bs_blog, conn, cur, i):
     Scrapes the blog page-by-page and inserts records to
     PostgreSQL page.
     """
-    #Query the website and return the html to the variable 'page'
+    # Query the website and return the html to the variable 'page'
     page = urllib2.urlopen(bs_blog)
-    #Parse the html in the 'page' variable, and store it in Beautiful Soup format
+    # Parse the html in the 'page' variable, and store it in Beautiful Soup format
     soup = BeautifulSoup(page, "html.parser")
 
     article_tags = soup.find_all("div", attrs={"class":"article"})
     for article in article_tags:
-        #If no comments, skip article.
+        # If no comments, skip article.
         posted = article.find("p", attrs={"class": "posted"})
         if not posted:
             continue
@@ -97,10 +98,10 @@ def scrape(bs_blog, conn, cur, i):
         if not article_title:
             article_title = extract_text(title_tag, 'A', 'title')
         
-        #tags
+        # tags
         entry_tag = article.find("p", attrs={"class": "entry-tags"})
         
-        #article content
+        # article content
         article_string = extract_text(article, 'A')
         
         if entry_tag:
@@ -131,7 +132,7 @@ def scrape(bs_blog, conn, cur, i):
         
         href_comm = [x['href'] for x in posted.find_all("a")]
         if len(href_comm) <= 1:
-            print("no comments: {}".format(bs_blog))
+            print(f"no comments: {bs_blog}")
             continue
         
         aquery = "INSERT INTO a2017(articleno, link, title, text, tags, posteddate) \
@@ -140,14 +141,14 @@ def scrape(bs_blog, conn, cur, i):
         cur.execute(aquery, adata)
         
         href_comment_tag = href_comm[1]
-        #comments
+        # comments
         cpage = urllib2.urlopen(href_comment_tag)
         csoup = BeautifulSoup(cpage, "html.parser")
         c_article_tags = csoup.find_all("article")
         # Since first article is not a comment.
         del c_article_tags[0]
          
-        #loop through article comments
+        # loop through article comments
         for carticle in c_article_tags:
             commentcredit = carticle.find("p", attrs={"class": "commentcredit"})
             commenter = [x.text for x in commentcredit if x.name == "span"]
@@ -163,12 +164,13 @@ def scrape(bs_blog, conn, cur, i):
         earlier_entry = soup.find("a", attrs={"class": "earlier"})
         
         if not earlier_entry:
-            print("no earlier entry: {}".format(bs_blog))
+            print(f"no earlier entry: {bs_blog}")
             return 0
         
         earlier_entry_href = earlier_entry['href']
         
     scrape(earlier_entry_href, conn, cur, i)
+
 
 def main():
     """
@@ -178,7 +180,7 @@ def main():
     conn_obj = connect_to_database_server(DATABASE)
     
     if conn_obj == -1:
-        print("Connection to PostgreSQL Database: {} failed.".format(DATABASE))
+        print(f"Connection to PostgreSQL Database: {DATABASE} failed.")
         sys.exit(0)
     else:
         conn = conn_obj[0]
@@ -189,8 +191,9 @@ def main():
     conn.commit()
     cur.close()
     conn.close()
-    print("Webdata scraped successfully in {} seconds.".format(time.time()-start_time))
-    
+    print(f"Webdata scraped successfully in {time.time()-start_time} seconds.")
+
+
 if __name__ == "__main__":
     main()
-    
+
