@@ -23,7 +23,7 @@ with open('cellarbrations_locs.json', 'r') as f:
 relevant_locs = {k: v for k, v in locs.items() if 'Cellarbrations' in k}
 
 lat_long_switch = 0
-key = 'AIzaSyDhx8Gb9-CPLfCN2KBo1_swmuCQgeDbwwc'
+key = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 g = g3(api_key=key)
 
