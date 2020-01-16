@@ -56,7 +56,7 @@ BROWSER.quit()
 
 
 lat_long_switch = 0
-key = 'AIzaSyDhx8Gb9-CPLfCN2KBo1_swmuCQgeDbwwc'
+key = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 g = g3(api_key=key)
 
