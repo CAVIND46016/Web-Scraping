@@ -140,7 +140,7 @@ def main():
                     try:
                         date_obj = datetime.strptime(datetime_tag, "%B %d, %Y %I:%M %p")
                     except:
-                        print(datetime_tag)
+                        date_obj = None
 
                 query = """
                         INSERT INTO comments(id, article_id, comment, commented_by, posted_datetime)
